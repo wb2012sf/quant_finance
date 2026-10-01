@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant_finance"
+version = "0.1.0"
+description = "Quantitative finance pricing examples: binary options (closed form, Monte Carlo, explicit FD) and a k-th to default CDS basket with Gaussian and t copulas"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pyflakes",
+    "pytest",
+    "scipy-stubs",
+]
+
+[tool.setuptools]
+py-modules = [
+    "BinaryOptions_MC",
+    "CdsBasket",
+    "ExplicitFD_CS",
+    "ExplicitFD_bin",
+    "FixedIncomeCurve",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.mypy]
+ignore_missing_imports = true
+files = [
+    "BinaryOptions_MC.py",
+    "CdsBasket.py",
+    "ExplicitFD_CS.py",
+    "ExplicitFD_bin.py",
+    "FixedIncomeCurve.py",
+]

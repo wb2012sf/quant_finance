@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      # requirements.txt is a hash-locked file resolved for Python 3.12; other versions resolve from pyproject.toml
+      - name: Install locked dependencies (hash-verified)
+        if: matrix.python-version == '3.12'
+        run: |
+          python -m pip install --require-hashes -r requirements.txt
+          python -m pip install mypy pyflakes pytest scipy-stubs
+
+      - name: Install dependencies from pyproject.toml
+        if: matrix.python-version != '3.12'
+        run: python -m pip install -e ".[dev]"
+
+      # The checks below run even if an earlier one fails, so every run reports all three results.
+      - name: pyflakes
+        run: python -m pyflakes *.py tests/
+
+      # Type-check once, against the locked dependency versions: older numpy/scipy stubs picked on other
+      # Python versions are less precise (e.g. floating[Any] instead of float64) and give spurious errors.
+      - name: mypy
+        if: ${{ !cancelled() && matrix.python-version == '3.12' }}
+        run: python -m mypy
+
+      - name: pytest
+        if: ${{ !cancelled() }}
+        run: python -m pytest
